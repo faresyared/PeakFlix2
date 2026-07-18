@@ -15,10 +15,10 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
-  const changeLanguage = () => { const next = i18n.resolvedLanguage === 'ar' ? 'en' : 'ar'; i18n.changeLanguage(next); localStorage.setItem('cinevault-language', next); };
+  const changeLanguage = () => { const next = i18n.resolvedLanguage === 'ar' ? 'en' : 'ar'; i18n.changeLanguage(next); localStorage.setItem('peakflix-language', next); };
   const submit = (e: React.FormEvent) => { e.preventDefault(); if (query.trim()) navigate(`/search?q=${encodeURIComponent(query)}`); };
   return <header className="navbar">
-    <Link className="brand" to="/"><span className="brand-icon"><Sparkles size={18}/></span>CINE<span>VAULT</span></Link>
+    <Link className="brand" to="/"><span className="brand-icon"><Sparkles size={18}/></span>PEAK<span>FLIX</span></Link>
     <nav className={open ? 'nav-links open' : 'nav-links'}>
       {links.map(([to, key]) => <NavLink key={to} to={to} onClick={() => setOpen(false)}>{t(key)}</NavLink>)}
     </nav>
