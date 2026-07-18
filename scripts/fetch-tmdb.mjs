@@ -1,9 +1,8 @@
 import { writeFile, mkdir } from 'node:fs/promises';
 
-const token = process.env.TMDB_READ_TOKEN;
+const token = process.env.TMDB_READ_TOKEN?.trim();
 if (!token) {
-  console.log('TMDB_READ_TOKEN is not set; keeping the existing catalog.');
-  process.exit(0);
+  throw new Error('TMDB_READ_TOKEN is missing. Add it under Settings > Secrets and variables > Actions using the exact name TMDB_READ_TOKEN.');
 }
 
 const API = 'https://api.themoviedb.org/3';
@@ -14,7 +13,10 @@ async function request(path, params = {}) {
   const url = new URL(`${API}${path}`);
   Object.entries(params).forEach(([key, value]) => value !== undefined && url.searchParams.set(key, String(value)));
   const response = await fetch(url, { headers });
-  if (!response.ok) throw new Error(`TMDB ${response.status}: ${url.pathname}`);
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`TMDB ${response.status}: ${url.pathname} ${body.slice(0, 250)}`);
+  }
   return response.json();
 }
 
@@ -26,6 +28,10 @@ async function pages(path, params, count = 4) {
   }
   return results;
 }
+
+console.log('TMDB token detected. Testing API access...');
+await request('/configuration');
+console.log('TMDB API access confirmed.');
 
 const [movieGenresEn, movieGenresAr, tvGenresEn, tvGenresAr] = await Promise.all([
   request('/genre/movie/list', { language: 'en-US' }),
@@ -40,6 +46,7 @@ const maps = {
   tvEn: Object.fromEntries(tvGenresEn.genres.map(x => [x.id, x.name])),
   tvAr: Object.fromEntries(tvGenresAr.genres.map(x => [x.id, x.name]))
 };
+void maps;
 
 const groups = await Promise.all([
   pages('/discover/movie', { language: 'en-US', include_adult: false, sort_by: 'popularity.desc', 'vote_count.gte': 100 }, 6).then(items => items.map(x => ({ ...x, siteType: 'movie', tmdbType: 'movie' }))),
@@ -70,8 +77,6 @@ async function enrich(item) {
   const seasons = en.number_of_seasons || undefined;
   const episodes = en.number_of_episodes || undefined;
   const date = en.release_date || en.first_air_date || '';
-  const genreEn = (en.genres || []).map(g => g.name);
-  const genreAr = (ar.genres || []).map(g => g.name);
 
   return {
     id: `${item.tmdbType}-${item.id}`,
@@ -85,8 +90,8 @@ async function enrich(item) {
     year: Number(date.slice(0, 4)) || 0,
     rating: Math.round((en.vote_average || 0) * 10) / 10,
     duration: runtime ? `${Math.floor(runtime / 60)}h ${String(runtime % 60).padStart(2, '0')}m` : seasons ? `${seasons} Seasons` : episodes ? `${episodes} Episodes` : 'N/A',
-    genre: genreEn,
-    genreAr,
+    genre: (en.genres || []).map(g => g.name),
+    genreAr: (ar.genres || []).map(g => g.name),
     poster: `${IMG}/w500${en.poster_path}`,
     backdrop: `${IMG}/original${en.backdrop_path}`,
     trailer: trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : '',
@@ -112,6 +117,8 @@ for (let i = 0; i < baseItems.length; i += concurrency) {
   catalog.push(...enriched.filter(Boolean));
   console.log(`Loaded ${Math.min(i + concurrency, baseItems.length)}/${baseItems.length}`);
 }
+
+if (catalog.length < 20) throw new Error(`TMDB returned only ${catalog.length} usable titles; deployment stopped to prevent publishing the old catalog.`);
 
 await mkdir('src/data', { recursive: true });
 const output = `import type { MediaItem } from '../types/media';\n\nexport const media: MediaItem[] = ${JSON.stringify(catalog, null, 2)};\n`;
