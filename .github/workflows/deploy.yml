@@ -1,4 +1,4 @@
-name: Deploy CineVault to GitHub Pages
+name: Deploy PeakFlix to GitHub Pages
 
 on:
   push:
@@ -17,6 +17,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      TMDB_READ_TOKEN: ${{ secrets.TMDB_READ_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,10 +41,8 @@ jobs:
           node ./node_modules/vite/bin/vite.js --version
           node -e "require('picocolors'); console.log('picocolors OK')"
 
-      - name: Build website
-        run: |
-          node ./node_modules/typescript/bin/tsc -b
-          node ./node_modules/vite/bin/vite.js build
+      - name: Build website and TMDB catalog
+        run: npm run build
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
