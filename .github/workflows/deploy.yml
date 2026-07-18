@@ -27,17 +27,19 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install --include=dev
-
-      - name: Verify build tools
         run: |
-          npx --yes tsc --version
-          npx --yes vite@5.4.11 --version
+          npm install
+          npm install --no-save typescript@5.6.3 vite@5.4.11 @vitejs/plugin-react@4.3.4
+
+      - name: Verify local build tools
+        run: |
+          node ./node_modules/typescript/bin/tsc --version
+          node ./node_modules/vite/bin/vite.js --version
 
       - name: Build website
         run: |
-          npx --yes tsc -b
-          npx --yes vite@5.4.11 build
+          node ./node_modules/typescript/bin/tsc -b
+          node ./node_modules/vite/bin/vite.js build
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
