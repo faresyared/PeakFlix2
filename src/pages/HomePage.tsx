@@ -1,17 +1,19 @@
 import { Search } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Hero } from '../components/Hero';
 import { MediaRow } from '../components/MediaRow';
-import { useAuth } from '../context/AuthContext';
-import { media } from '../data/media';
-import { getProgress } from '../utils/storage';
+import type { MediaItem } from '../types/media';
+import { getHomeCatalog } from '../services/tmdb';
 
 export function HomePage(){
- const {t}=useTranslation(); const navigate=useNavigate(); const [q,setQ]=useState(''); const {user}=useAuth();
- const progressItems=user?getProgress(user):[]; const progressMap=Object.fromEntries(progressItems.map(p=>[p.mediaId,p.duration?Math.min(100,p.currentTime/p.duration*100):0]));
- const continueItems=media.filter(m=>progressMap[m.id]!==undefined);
+ const {t}=useTranslation(); const navigate=useNavigate(); const [q,setQ]=useState('');
+ const [data,setData]=useState<{hero:MediaItem;movies:MediaItem[];series:MediaItem[];anime:MediaItem[]}|null>(null);
+ const [error,setError]=useState('');
+ useEffect(()=>{getHomeCatalog().then(setData).catch(e=>setError(e.message))},[]);
  const submit=(e:React.FormEvent)=>{e.preventDefault();if(q.trim())navigate(`/search?q=${encodeURIComponent(q)}`)};
- return <><Hero item={media[0]}/><section className="home-search"><form onSubmit={submit}><Search/><input value={q} onChange={e=>setQ(e.target.value)} placeholder={t('search')}/><button>{t('browse')}</button></form></section><div className="content-shell">{user&&<MediaRow title={t('continueWatching')} items={continueItems} progress={progressMap}/>}<MediaRow title={t('trendingMovies')} items={media.filter(x=>x.type==='movie'&&x.trending)}/><MediaRow title={t('trendingSeries')} items={media.filter(x=>['series','turkish-series','turkish-drama'].includes(x.type)&&x.trending)}/><MediaRow title={t('trendingAnime')} items={media.filter(x=>x.type==='anime'&&x.trending)}/></div></>;
+ if(error)return <div className="page-shell"><div className="empty-state"><h2>{error}</h2></div></div>;
+ if(!data)return <div className="page-shell"><div className="empty-state"><h2>Loading TMDB...</h2></div></div>;
+ return <><Hero item={data.hero}/><section className="home-search"><form onSubmit={submit}><Search/><input value={q} onChange={e=>setQ(e.target.value)} placeholder={t('search')}/><button>{t('browse')}</button></form></section><div className="content-shell"><MediaRow title={t('trendingMovies')} items={data.movies}/><MediaRow title={t('trendingSeries')} items={data.series}/><MediaRow title={t('trendingAnime')} items={data.anime}/></div></>;
 }
