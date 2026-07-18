@@ -26,8 +26,8 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install all project dependencies
-        run: npm install react react-dom react-router-dom framer-motion i18next react-i18next lucide-react swiper vite @vitejs/plugin-react typescript @types/react @types/react-dom
+      - name: Install pinned dependencies
+        run: npm install
 
       - name: Build website
         run: npm run build
