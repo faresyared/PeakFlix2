@@ -17,6 +17,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: "false"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,8 +29,11 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install pinned dependencies
-        run: npm install
+      - name: Install project dependencies including dev dependencies
+        run: npm install --include=dev
+
+      - name: Ensure build tools are available
+        run: npm install --no-save vite@5.4.11 @vitejs/plugin-react@4.3.4 typescript@5.6.3
 
       - name: Build website
         run: npm run build
