@@ -9,7 +9,7 @@ export function Hero({ item }: { item: MediaItem }) {
   const { t } = useTranslation(); const { title, description } = useLocalizedMedia();
   return <section className="hero" style={{backgroundImage:`linear-gradient(90deg, rgba(7,8,12,.98) 3%, rgba(7,8,12,.75) 45%, rgba(7,8,12,.16)), linear-gradient(0deg,#08090d 0%,transparent 38%), url(${item.backdrop})`}}>
     <motion.div className="hero-content" initial={{opacity:0,y:25}} animate={{opacity:1,y:0}} transition={{duration:.7}}>
-      <span className="eyebrow">CINEVAULT ORIGINAL</span>
+      <span className="eyebrow">PEAKFLIX ORIGINAL</span>
       <h1>{title(item)}</h1>
       <div className="meta"><span><Star size={16} fill="currentColor"/> {item.rating}</span><span>{item.year}</span><span>{item.duration}</span><span className="quality">4K</span></div>
       <p>{description(item)}</p>
