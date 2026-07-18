@@ -25,13 +25,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
-      - name: Install project dependencies
-        run: npm install --include=dev
-
-      - name: Ensure Vite build tools are installed
-        run: npm install --no-save vite @vitejs/plugin-react typescript
+      - name: Install all project dependencies
+        run: npm install react react-dom react-router-dom framer-motion i18next react-i18next lucide-react swiper vite @vitejs/plugin-react typescript @types/react @types/react-dom
 
       - name: Build website
         run: npm run build
