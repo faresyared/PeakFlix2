@@ -257,7 +257,7 @@ export function WatchPage() {
                     </div>
 
                     <p style={{ color: '#aaa', fontSize: '13px', margin: 0, lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: '3', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {ep.overview || "No description available for this episode"}
+                      {ep.overview || "No description available for this episode ."}
                     </p>
                   </div>
                 </div>
