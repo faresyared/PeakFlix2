@@ -9,7 +9,7 @@ export function WatchPage() {
   const { id } = useParams();
   const [item, setItem] = useState<MediaItem | null>(null);
   const [status, setStatus] = useState('جاري فحص خوادم البث الحية المقطعة...');
-  const [activeServer, setActiveServer] = useState('superembed'); // جعل سيرفر SUPEREMBED هو الرئيسي والافتراضي فوراً
+  const [activeServer, setActiveServer] = useState('superembed'); // سيرفر SUPEREMBED الرئيسي والافتراضي
   const { title } = useLocalizedMedia();
 
   // 1. جلب تفاصيل الفيلم من TMDB
@@ -18,7 +18,7 @@ export function WatchPage() {
       getDetails(id)
         .then((data) => {
           setItem(data);
-          setStatus(''); // إنهاء التحميل بمجرد جلب البيانات
+          setStatus(''); 
         })
         .catch(e => {
           console.error(e.message);
@@ -29,10 +29,8 @@ export function WatchPage() {
 
   if (!item) return <div className="page-shell"><div className="empty-state"><h2>Loading Player...</h2></div></div>;
 
-  // تنظيف المعرف تماماً لضمان إرسال أرقام مجردة فقط للـ TMDB ID
   const cleanId = String(item.id).replace('movie-', '');
 
-  // السيرفرات مرتبة بحيث يكون SUPEREMBED في الصدارة
   const servers: { [key: string]: string } = {
     superembed: `https://multiembed.mov/?video_id=${cleanId}&tmdb=1`,
     autoembed: `https://player.autoembed.cc/movie/${cleanId}`,
@@ -77,7 +75,6 @@ export function WatchPage() {
       </div>
 
       <div className="player-frame" style={{ width: '100%', height: '70vh', background: '#000', position: 'relative', marginTop: '15px', borderRadius: '8px', overflow: 'hidden' }}>
-        {/* شاشة التحميل الذكية */}
         {status && (
           <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(8,9,13,0.95)', color: '#fff', zIndex: 10, flexDirection: 'column', gap: '15px', padding: '20px', textAlign: 'center' }}>
             <div className="loading-spinner" style={{ border: '4px solid #f3f3f3', borderTop: '4px solid #ff6b00', borderRadius: '50%', width: '40px', height: '40px', animation: 'spin 1s linear infinite' }}></div>
@@ -85,12 +82,16 @@ export function WatchPage() {
           </div>
         )}
 
-        {/* مشغل الإطار المباشر السريع من السيرفر المختار حالياً */}
+        {/* التعديل الجوهري: إضافة تفعيل الفول سكرين المطلق لكل النطاقات المدمجة وصلاحيات الأمان الشاملة */}
         <iframe
           src={servers[activeServer]}
           style={{ width: '100%', height: '100%', border: 'none' }}
-          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-          allowFullScreen
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen *; geolocation; microphone; camera; midi; vr; accelerometer; gyroscope"
+          allowFullScreen={true}
+          // @ts-ignore
+          webkitallowfullscreen="true"
+          // @ts-ignore
+          mozallowfullscreen="true"
           title="PeakFlix Cinema Live Stream"
         />
       </div>
