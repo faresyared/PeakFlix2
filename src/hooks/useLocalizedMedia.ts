@@ -3,10 +3,18 @@ import type { MediaItem } from '../types/media';
 
 export function useLocalizedMedia() {
   const { i18n } = useTranslation();
-  const ar = i18n.resolvedLanguage === 'ar';
+  // اللغة الحالية (مثلاً 'ar', 'en', 'es', 'ja')
+  const currentLang = i18n.resolvedLanguage || 'en'; 
+
   return {
-    ar,
-    title: (item: MediaItem) => ar ? item.titleAr : item.title,
-    description: (item: MediaItem) => ar ? item.descriptionAr : item.description,
+    currentLang,
+    ar: currentLang === 'ar',
+    title: (item: MediaItem) => {
+      // إذا كانت اللغة عربي بنجيب العنوان العربي، غير هيك بنجيب العنوان الأساسي
+      return currentLang === 'ar' ? item.titleAr : item.title;
+    },
+    description: (item: MediaItem) => {
+      return currentLang === 'ar' ? item.descriptionAr : item.description;
+    },
   };
 }

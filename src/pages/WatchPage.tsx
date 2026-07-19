@@ -1,6 +1,6 @@
-import { ArrowLeft, Server, Film, Tv, Star } from 'lucide-react';
+import { ArrowLeft, Server, Film, Tv, Star, ArrowRight, ArrowLeft as ArrowLeftIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useLocation } from 'react-router-dom';
 import { useLocalizedMedia } from '../hooks/useLocalizedMedia';
 import { getDetails } from '../services/tmdb'; 
 
@@ -22,46 +22,169 @@ interface Season {
 
 export function WatchPage() {
   const { id } = useParams();
+  const location = useLocation();
   const [item, setItem] = useState<any | null>(null);
-  const [status, setStatus] = useState('جاري فحص خوادم البث الحية المقطعة...');
-  const [activeServer, setActiveServer] = useState('superembed'); 
+  const [status, setStatus] = useState('Loading Player...');
+  
+  const [activeServer, setActiveServer] = useState('vipstream'); 
   
   const [activeSeason, setActiveSeason] = useState<number>(1);
   const [activeEpisode, setActiveEpisode] = useState<number>(1);
   const [seasonsList, setSeasonsList] = useState<Season[]>([]);
   const [episodesList, setEpisodesList] = useState<Episode[]>([]);
 
-  const { title } = useLocalizedMedia();
+  // استخدام الـ hook الخاص بمشروعك لجلب اللغة الحالية المحددة من زر الهيدر
+  const { title, currentLang } = useLocalizedMedia() as any; 
 
-  const isTv = String(id).includes('tv');
-  const cleanId = String(id).replace('movie-', '').replace('tv-', '');
+  // معرفة اللغة الحالية (عربي، إنجليزي، إسباني، ياباني...)، وإذا لم تتوفر نعتمد الإنجليزية كافتراضية
+  const activeLanguage = currentLang || localStorage.getItem('language') || 'en';
 
-  // مفتاح API شغال ونشط حالياً كـ Fallback مضمون
-  const BACKUP_KEY = 'c9053fa3b45501306385d30d31590448';
+  const idString = String(id || '');
+  const isTv = idString.includes('tv') || location.pathname.includes('/tv/');
+  const cleanId = idString.replace('movie-', '').replace('tv-', '').replace(/[^\d]/g, '');
 
-  // 1. جلب بيانات العنصر الأساسي بالدالة الرسمية للمشروع المضمونة عندك
+  const TMDB_TOKEN = import.meta.env.VITE_TMDB_READ_TOKEN || import.meta.env.VITE_TMDB_TOKEN || '15d2ea6d0dc1d247f33d5298a0474ded';
+
+  // نصوص واجهة المستخدم حسب اللغة الحالية لتغيير اتجاه الصفحة والكتابة
+  const isRtl = activeLanguage === 'ar';
+  
+  const uiTexts: { [key: string]: { [key: string]: string } } = {
+    ar: { 
+      status: 'جاري فحص خوادم البث الحية المقطعة...', 
+      serverTitle: 'سيرفرات البث الحية:', 
+      serverBtn: 'سيرفر',
+      currentSeason: 'الموسم الحالي:', 
+      seasonOpt: 'الموسم',
+      epBadge: 'حلقة',
+      fallbackEpName: 'الحلقة',
+      loadingEpisodes: 'جاري تحميل الحلقات الخاصة بهذا الموسم...', 
+      noEpisodes: 'لا يوجد وصف متوفر لهذه الحلقة حالياً.', 
+      prev: 'الحلقة السابقة', 
+      next: 'الحلقة التالية', 
+      tvBadge: 'بث مباشر للمسلسلات بقوة PEAKFLIX', 
+      movieBadge: 'بث مباشر للأفلام بقوة PEAKFLIX' 
+    },
+    en: { 
+      status: 'Checking live streaming servers...', 
+      serverTitle: 'Live Streaming Servers:', 
+      serverBtn: 'Server',
+      currentSeason: 'Current Season:', 
+      seasonOpt: 'Season',
+      epBadge: 'Ep',
+      fallbackEpName: 'Episode',
+      loadingEpisodes: 'Loading episodes for this season...', 
+      noEpisodes: 'No description available for this episode.', 
+      prev: 'Previous Episode', 
+      next: 'Next Episode', 
+      tvBadge: 'Live Series Stream by PEAKFLIX', 
+      movieBadge: 'Live Movie Stream by PEAKFLIX' 
+    },
+    es: { 
+      status: 'Verificando servidores de streaming...', 
+      serverTitle: 'Servidores en vivo:', 
+      serverBtn: 'Servidor',
+      currentSeason: 'Temporada actual:', 
+      seasonOpt: 'Temporada',
+      epBadge: 'Ep',
+      fallbackEpName: 'Episodio',
+      loadingEpisodes: 'Cargando episodios de esta temporada...', 
+      noEpisodes: 'No hay descripción disponible.', 
+      prev: 'Episodio anterior', 
+      next: 'Siguiente episodio', 
+      tvBadge: 'Serie en vivo por PEAKFLIX', 
+      movieBadge: 'Película en vivo por PEAKFLIX' 
+    },
+    ja: { 
+      status: 'ストリーミングサーバーを確認中...', 
+      serverTitle: 'ライブサーバー:', 
+      serverBtn: 'サーバー',
+      currentSeason: '現在のシーズン:', 
+      seasonOpt: 'シーズン',
+      epBadge: '第',
+      fallbackEpName: 'エピソード',
+      loadingEpisodes: 'エピソードを読み込み中...', 
+      noEpisodes: '説明はありません。', 
+      prev: '前のエピソード', 
+      next: '次のエピソード', 
+      tvBadge: 'PEAKFLIXによるライブシリーズ', 
+      movieBadge: 'PEAKFLIXによるライブ映画' 
+    },
+    fr: { 
+      status: 'Vérification des serveurs...', 
+      serverTitle: 'Serveurs en direct:', 
+      serverBtn: 'Serveur',
+      currentSeason: 'Saison actuelle:', 
+      seasonOpt: 'Saison',
+      epBadge: 'Ép',
+      fallbackEpName: 'Épisode',
+      loadingEpisodes: 'Chargement des épisodes...', 
+      noEpisodes: 'Aucune description disponible.', 
+      prev: 'Épisode précédent', 
+      next: 'Épisode suivant', 
+      tvBadge: 'Série en direct par PEAKFLIX', 
+      movieBadge: 'Film en direct par PEAKFLIX' 
+    },
+    it: { 
+      status: 'Controllo dei server...', 
+      serverTitle: 'Server dal vivo:', 
+      serverBtn: 'Server',
+      currentSeason: 'Stagione attuale:', 
+      seasonOpt: 'Stagione',
+      epBadge: 'Ep',
+      fallbackEpName: 'Episodio',
+      loadingEpisodes: 'Caricamento episodi...', 
+      noEpisodes: 'Nessuna descrizione disponibile.', 
+      prev: 'Episodio precedente', 
+      next: 'Prossimo episodio', 
+      tvBadge: 'Serie dal vivo di PEAKFLIX', 
+      movieBadge: 'Film dal vivo di PEAKFLIX' 
+    },
+    de: { 
+      status: 'Streaming-Server werden überprüft...', 
+      serverTitle: 'Live-Server:', 
+      serverBtn: 'Server',
+      currentSeason: 'Aktuelle Staffel:', 
+      seasonOpt: 'Staffel',
+      epBadge: 'Ep',
+      fallbackEpName: 'Episode',
+      loadingEpisodes: 'Episoden werden geladen...', 
+      noEpisodes: 'Keine Beschreibung verfügbar.', 
+      prev: 'Vorherige Episode', 
+      next: 'Nächste Episode', 
+      tvBadge: 'Live-Serien von PEAKFLIX', 
+      movieBadge: 'Live-Filme von PEAKFLIX' 
+    }
+  };
+
+  const text = uiTexts[activeLanguage] || uiTexts['en'];
+
+  // 1. جلب بيانات العمل الأساسية والمواسم باللغة المختارة ديناميكياً
   useEffect(() => {
-    if (id) {
-      getDetails(id)
+    if (cleanId) {
+      getDetails(idString)
         .then((data) => {
           if (data) {
             setItem(data);
             setStatus('');
             
             const rawData = data as any;
-            if (isTv && rawData.seasons && Array.isArray(rawData.seasons)) {
-              const realSeasons = rawData.seasons.filter((s: any) => s.season_number > 0);
+            if (rawData.seasons && Array.isArray(rawData.seasons)) {
+              const realSeasons = rawData.seasons.filter((s: any) => s && s.season_number > 0);
               setSeasonsList(realSeasons);
               if (realSeasons.length > 0) {
                 setActiveSeason(realSeasons[0].season_number);
               }
-            } else if (isTv) {
-              // إذا لم تتوفر المواسم بالدالة الأساسية، نجلبها بمفتاحنا المضمون
-              fetch(`https://api.themoviedb.org/3/tv/${cleanId}?api_key=${BACKUP_KEY}&language=ar`)
+            } else {
+              fetch(`https://api.themoviedb.org/3/tv/${cleanId}?language=${activeLanguage}`, {
+                headers: {
+                  Authorization: `Bearer ${TMDB_TOKEN}`,
+                  'Content-Type': 'application/json;charset=utf-8'
+                }
+              })
                 .then(res => res.json())
                 .then(tvData => {
-                  if (tvData && tvData.seasons) {
-                    const realSeasons = tvData.seasons.filter((s: any) => s.season_number > 0);
+                  if (tvData && tvData.seasons && Array.isArray(tvData.seasons)) {
+                    const realSeasons = tvData.seasons.filter((s: any) => s && s.season_number > 0);
                     setSeasonsList(realSeasons);
                     if (realSeasons.length > 0) {
                       setActiveSeason(realSeasons[0].season_number);
@@ -71,23 +194,60 @@ export function WatchPage() {
             }
           }
         })
-        .catch(e => {
-          console.error(e);
-          setStatus('فشل في جلب بيانات العمل من TMDB');
+        .catch(() => {
+          fetch(`https://api.themoviedb.org/3/tv/${cleanId}?language=${activeLanguage}`, {
+            headers: {
+              Authorization: `Bearer ${TMDB_TOKEN}`,
+              'Content-Type': 'application/json;charset=utf-8'
+            }
+          })
+            .then(res => res.json())
+            .then(data => {
+              if (data) {
+                setItem(data);
+                setStatus('');
+                if (data.seasons && Array.isArray(data.seasons)) {
+                  const realSeasons = data.seasons.filter((s: any) => s && s.season_number > 0);
+                  setSeasonsList(realSeasons);
+                  if (realSeasons.length > 0) {
+                    setActiveSeason(realSeasons[0].season_number);
+                  }
+                }
+              }
+            }).catch(() => setStatus('Failed to load data from TMDB'));
         });
     }
-  }, [id]);
+  }, [idString, cleanId, TMDB_TOKEN, activeLanguage]);
 
-  // 2. جلب الحلقات بشكل مستقر ومباشر بمفتاح الـ API المضمون 100%
+  // 2. جلب الحلقات وتفاصيلها بناءً على اللغة المفعلة حالياً من زر الهيدر
   useEffect(() => {
-    if (isTv && id && activeSeason) {
-      fetch(`https://api.themoviedb.org/3/tv/${cleanId}/season/${activeSeason}?api_key=${BACKUP_KEY}&language=en-US`)
+    if (cleanId && activeSeason) {
+      fetch(`https://api.themoviedb.org/3/tv/${cleanId}/season/${activeSeason}?language=${activeLanguage}`, {
+        headers: {
+          Authorization: `Bearer ${TMDB_TOKEN}`,
+          'Content-Type': 'application/json;charset=utf-8'
+        }
+      })
         .then(res => res.json())
         .then(data => {
-          if (data && data.episodes) {
+          if (data && data.episodes && Array.isArray(data.episodes) && data.episodes.length > 0) {
             setEpisodesList(data.episodes);
           } else {
-            setEpisodesList([]);
+            // خطة بديلة للإسقاط للغة الإنجليزية في حال عدم توفر الترجمة للغة المحددة
+            fetch(`https://api.themoviedb.org/3/tv/${cleanId}/season/${activeSeason}?language=en-US`, {
+              headers: {
+                Authorization: `Bearer ${TMDB_TOKEN}`,
+                'Content-Type': 'application/json;charset=utf-8'
+              }
+            })
+              .then(res => res.json())
+              .then(enData => {
+                if (enData && enData.episodes) {
+                  setEpisodesList(enData.episodes);
+                } else {
+                  setEpisodesList([]);
+                }
+              }).catch(() => setEpisodesList([]));
           }
         })
         .catch(err => {
@@ -95,47 +255,61 @@ export function WatchPage() {
           setEpisodesList([]);
         });
     }
-  }, [activeSeason, id]);
+  }, [activeSeason, cleanId, TMDB_TOKEN, activeLanguage]);
 
-  if (!item && status.includes('جاري فحص')) {
+  if (!item && status.includes('Loading')) {
     return <div className="page-shell"><div className="empty-state"><h2>Loading Player...</h2></div></div>;
   }
 
   const servers: { [key: string]: string } = {
-    superembed: isTv 
-      ? `https://multiembed.mov/?video_id=${cleanId}&tmdb=1&s=${activeSeason}&e=${activeEpisode}`
-      : `https://multiembed.mov/?video_id=${cleanId}&tmdb=1`,
+    vipstream: isTv
+      ? `https://vidsrc.me/embed/tv?tmdb=${cleanId}&season=${activeSeason}&episode=${activeEpisode}`
+      : `https://vidsrc.me/embed/movie?tmdb=${cleanId}`,
     
-    autoembed: isTv
+    gdrive_player: isTv
+      ? `https://vidsrc.cc/v2/embed/tv/${cleanId}/${activeSeason}/${activeEpisode}`
+      : `https://vidsrc.cc/v2/embed/movie/${cleanId}`,
+    
+    doodstream_alt: isTv
       ? `https://player.autoembed.cc/tv/${cleanId}/${activeSeason}/${activeEpisode}`
       : `https://player.autoembed.cc/movie/${cleanId}`,
-    
-    vidsrc_pro: isTv
-      ? `https://vidsrc.pro/embed/tv/${cleanId}/${activeSeason}/${activeEpisode}`
-      : `https://vidsrc.pro/embed/movie/${cleanId}`,
-    
-    vidsrc_cc: isTv
-      ? `https://vidsrc.cc/v2/embed/tv/${cleanId}/${activeSeason}/${activeEpisode}`
-      : `https://vidsrc.cc/v2/embed/movie/${cleanId}`
+
+    multiembed: isTv 
+      ? `https://multiembed.mov/?video_id=${cleanId}&tmdb=1&s=${activeSeason}&e=${activeEpisode}`
+      : `https://multiembed.mov/?video_id=${cleanId}&tmdb=1`
+  };
+
+  const handleNextEpisode = () => {
+    if (activeEpisode < episodesList.length) {
+      setActiveEpisode(prev => prev + 1);
+    }
+  };
+
+  const handlePrevEpisode = () => {
+    if (activeEpisode > 1) {
+      setActiveEpisode(prev => prev - 1);
+    }
   };
 
   return (
-    <div className="watch-page" style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px', direction: 'rtl' }}>
-      <div className="watch-top" style={{ textAlign: 'right' }}>
-        <Link to={`/title/${id}`}><ArrowLeft style={{ transform: 'rotate(180deg)' }} /></Link>
+    <div className="watch-page" style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px', direction: isRtl ? 'rtl' : 'ltr' }}>
+      <div className="watch-top" style={{ textAlign: isRtl ? 'right' : 'left' }}>
+        <Link to={`/title/${idString}`}><ArrowLeft style={{ transform: isRtl ? 'rotate(180deg)' : 'none' }} /></Link>
         <div>
           <small style={{ display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'flex-start' }}>
             {isTv ? <Tv size={12} color="#ff6b00" /> : <Film size={12} color="#ff6b00" />}
-            {isTv ? 'بث مباشر للمسلسلات بقوة PEAKFLIX' : 'بث مباشر للأفلام بقوة PEAKFLIX'}
+            {isTv ? text.tvBadge : text.movieBadge}
           </small>
-          <h1 style={{ textAlign: 'right' }}>{item ? title(item) : 'جاري التحميل...'} {isTv && <span style={{ color: '#ff6b00', fontSize: '16px' }}>(الموسم {activeSeason} - الحلقة {activeEpisode})</span>}</h1>
+          <h1 style={{ textAlign: isRtl ? 'right' : 'left' }}>
+            {item ? title(item) : 'Loading...'} {isTv && <span style={{ color: '#ff6b00', fontSize: '16px' }}>({text.currentSeason.replace(':', '')} {activeSeason} - {activeLanguage === 'ar' ? 'الحلقة' : 'Ep'} {activeEpisode})</span>}
+          </h1>
         </div>
       </div>
 
       {/* سيرفرات البث */}
       <div style={{ display: 'flex', gap: '10px', marginTop: '15px', flexWrap: 'wrap', background: '#12141c', padding: '10px', borderRadius: '6px', border: '1px solid #222', alignItems: 'center' }}>
-        <span style={{ color: '#aaa', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '14px', marginLeft: '10px' }}>
-          <Server size={16} color="#ff6b00" /> سيرفرات البث الحية:
+        <span style={{ color: '#aaa', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '14px', marginLeft: isRtl ? '10px' : '0', marginRight: isRtl ? '0' : '10px' }}>
+          <Server size={16} color="#ff6b00" /> {text.serverTitle}
         </span>
         {Object.keys(servers).map((srv, idx) => (
           <button
@@ -152,7 +326,7 @@ export function WatchPage() {
               cursor: 'pointer'
             }}
           >
-            سيرفر {idx + 1}
+            {`${text.serverBtn} ${idx + 1}`}
           </button>
         ))}
       </div>
@@ -160,6 +334,7 @@ export function WatchPage() {
       {/* الفريم الأساسي للفيديو */}
       <div className="player-frame" style={{ width: '100%', height: '70vh', background: '#000', position: 'relative', marginTop: '15px', borderRadius: '8px', overflow: 'hidden' }}>
         <iframe
+          key={`${activeServer}-${activeSeason}-${activeEpisode}`}
           src={servers[activeServer]}
           style={{ width: '100%', height: '100%', border: 'none' }}
           allow="autoplay; encrypted-media; picture-in-picture; fullscreen *;"
@@ -171,14 +346,41 @@ export function WatchPage() {
         />
       </div>
 
-      {/* عرض الحلقات بالوصف والتصنيف والصور تحت الفريم */}
+      {/* أزرار الانتقال الذكي متوافقة الاتجاه حسب اللغة */}
+      {isTv && episodesList.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px', background: '#0d0f14', padding: '12px 20px', borderRadius: '8px', border: '1px solid #1c1f2b' }}>
+          
+          {activeEpisode > 1 ? (
+            <button 
+              onClick={handlePrevEpisode}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#1c1f2b', color: '#fff', border: '1px solid #333', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}
+            >
+              {isRtl ? <ArrowRight size={16} color="#ff6b00" /> : <ArrowLeftIcon size={16} color="#ff6b00" />}
+              {text.prev}
+            </button>
+          ) : <div />}
+
+          {activeEpisode < episodesList.length ? (
+            <button 
+              onClick={handleNextEpisode}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#ff6b00', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}
+            >
+              {text.next}
+              {isRtl ? <ArrowLeftIcon size={16} color="#fff" /> : <ArrowRight size={16} color="#fff" />}
+            </button>
+          ) : <div />}
+
+        </div>
+      )}
+
+      {/* قائمة المواسم والحلقات */}
       {isTv && (
-        <div style={{ marginTop: '30px' }}>
+        <div style={{ marginTop: '20px' }}>
           
           {/* قسم اختيار السيزون */}
           {seasonsList.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px', background: '#0b0c10', padding: '15px', borderRadius: '8px', border: '1px solid #1f222e', marginBottom: '20px' }}>
-              <label style={{ color: '#fff', fontWeight: 'bold', fontSize: '16px' }}>الموسم الحالي:</label>
+              <label style={{ color: '#fff', fontWeight: 'bold', fontSize: '16px' }}>{text.currentSeason}</label>
               <select 
                 value={activeSeason}
                 onChange={(e) => {
@@ -198,7 +400,9 @@ export function WatchPage() {
               >
                 {seasonsList.map((s) => (
                   <option key={s.id} value={s.season_number}>
-                    الموسم {s.season_number} ({s.episode_count} حلقة)
+                    {activeLanguage === 'ar' 
+                      ? `الموسم ${s.season_number} (${s.episode_count} حلقة)` 
+                      : `${text.seasonOpt} ${s.season_number} (${s.episode_count} ${activeLanguage === 'ja' ? 'エピソード' : activeLanguage === 'es' ? 'Episodios' : activeLanguage === 'fr' ? 'Épisodes' : 'Episodes'})`}
                   </option>
                 ))}
               </select>
@@ -220,6 +424,7 @@ export function WatchPage() {
                   onClick={() => setActiveEpisode(ep.episode_number)}
                   style={{
                     display: 'flex',
+                    flexDirection: isRtl ? 'row' : 'row-reverse',
                     background: isActive ? '#1c1f2b' : '#12141c',
                     borderRadius: '8px',
                     overflow: 'hidden',
@@ -228,7 +433,7 @@ export function WatchPage() {
                     transition: 'transform 0.2s ease',
                     minHeight: '130px'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateX(-5px)'}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = isRtl ? 'translateX(-5px)' : 'translateX(5px)'}
                   onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(0)'}
                 >
                   {/* صورة الحلقة */}
@@ -238,16 +443,16 @@ export function WatchPage() {
                       alt={ep.name} 
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
-                    <div style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
-                      حلقة {ep.episode_number}
+                    <div style={{ position: 'absolute', top: '8px', right: isRtl ? '8px' : 'auto', left: isRtl ? 'auto' : '8px', background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+                      {activeLanguage === 'ar' ? `حلقة ${ep.episode_number}` : `${text.epBadge} ${ep.episode_number}`}
                     </div>
                   </div>
 
                   {/* تفاصيل الحلقة */}
-                  <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, textAlign: 'right' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, textAlign: isRtl ? 'right' : 'left' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: isRtl ? 'row' : 'row-reverse' }}>
                       <h3 style={{ color: isActive ? '#ff6b00' : '#fff', margin: 0, fontSize: '16px', fontWeight: 'bold' }}>
-                        {ep.name || `الحلقة ${ep.episode_number}`}
+                        {ep.name || `${text.fallbackEpName} ${ep.episode_number}`}
                       </h3>
                       
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#aaa', fontSize: '12px', background: '#222', padding: '2px 6px', borderRadius: '4px' }}>
@@ -257,7 +462,7 @@ export function WatchPage() {
                     </div>
 
                     <p style={{ color: '#aaa', fontSize: '13px', margin: 0, lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: '3', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {ep.overview || "No description available for this episode ."}
+                      {ep.overview || text.noEpisodes}
                     </p>
                   </div>
                 </div>
@@ -265,7 +470,7 @@ export function WatchPage() {
             })}
             
             {episodesList.length === 0 && (
-              <p style={{ color: '#666', textAlign: 'center', marginTop: '20px' }}>جاري تحميل الحلقات الخاصة بهذا الموسم...</p>
+              <p style={{ color: '#666', textAlign: 'center', marginTop: '20px' }}>{text.loadingEpisodes}</p>
             )}
           </div>
 

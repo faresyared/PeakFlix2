@@ -11,7 +11,12 @@ export function HomePage(){
  const {t}=useTranslation(); const navigate=useNavigate(); const [q,setQ]=useState('');
  const [data,setData]=useState<{hero:MediaItem;movies:MediaItem[];series:MediaItem[];anime:MediaItem[]}|null>(null);
  const [error,setError]=useState('');
- useEffect(()=>{getHomeCatalog().then(setData).catch(e=>setError(e.message))},[]);
+ const currentLang = localStorage.getItem('peakflix-language') || 'en';
+
+ useEffect(()=>{
+   getHomeCatalog().then(setData).catch(e=>setError(e.message))
+ },[currentLang]);
+
  const submit=(e:React.FormEvent)=>{e.preventDefault();if(q.trim())navigate(`/search?q=${encodeURIComponent(q)}`)};
  if(error)return <div className="page-shell"><div className="empty-state"><h2>{error}</h2></div></div>;
  if(!data)return <div className="page-shell"><div className="empty-state"><h2>Loading TMDB...</h2></div></div>;
