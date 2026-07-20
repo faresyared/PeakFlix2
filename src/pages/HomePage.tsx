@@ -13,7 +13,7 @@ export function HomePage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [q, setQ] = useState('');
-  const [data, setData] = useState<{ hero: MediaItem; movies: MediaItem[]; series: MediaItem[]; anime: MediaItem[] } | null>(null);
+  const [data, setData] = useState<{ featured: MediaItem[]; movies: MediaItem[]; series: MediaItem[]; anime: MediaItem[] } | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [continueWatching, setContinueWatching] = useState<MediaItem[]>([]);
@@ -86,7 +86,7 @@ export function HomePage() {
 
   return (
     <>
-      {data?.hero ? <Hero item={data.hero} /> : <div className="hero hero-placeholder" />}
+      {data?.featured?.length ? <Hero items={data.featured} /> : <div className="hero hero-placeholder" />}
       <section className="home-search">
         <form onSubmit={submit}>
           <Search />
@@ -95,6 +95,7 @@ export function HomePage() {
         </form>
       </section>
       <div className="content-shell">
+        {error ? <div className="error-banner">{error}</div> : null}
         {loading ? <MediaSkeleton count={6} /> : rows.map((row) => <MediaRow key={row.title} title={row.title} items={row.items} />)}
       </div>
     </>

@@ -1,8 +1,9 @@
-import { Globe2, LogIn, LogOut, Menu, Search, Sparkles, X } from 'lucide-react';
+import { Globe2, LogIn, LogOut, Menu, Search, X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { BrandMark } from './BrandMark';
 
 const links = [
   ['/', 'home'], ['/category/movie', 'movies'], ['/category/series', 'series'], ['/category/turkish-drama', 'turkishDrama'],
@@ -39,7 +40,7 @@ export function Navbar() {
   const submit = (e: React.FormEvent) => { e.preventDefault(); if (query.trim()) navigate(`/search?q=${encodeURIComponent(query)}`); };
 
   return <header className="navbar">
-    <Link className="brand" to="/"><span className="brand-icon"><Sparkles size={18}/></span>PEAK<span>FLIX</span></Link>
+    <Link className="brand" to="/"><span className="brand-icon"><BrandMark size={18}/></span>PEAK<span>FLIX</span></Link>
     <nav className={open ? 'nav-links open' : 'nav-links'}>
       {links.map(([to, key]) => <NavLink key={to} to={to} onClick={() => setOpen(false)}>{t(key)}</NavLink>)}
     </nav>

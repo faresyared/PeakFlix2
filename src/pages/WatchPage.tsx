@@ -25,6 +25,7 @@ export function WatchPage() {
   const location = useLocation();
   const [item, setItem] = useState<any | null>(null);
   const [status, setStatus] = useState('Loading Player...');
+  const [error, setError] = useState('');
   
   const [activeServer, setActiveServer] = useState('vipstream'); 
   
@@ -195,6 +196,7 @@ export function WatchPage() {
           }
         })
         .catch(() => {
+          setError('Unable to load this title right now. The media service may be unavailable.');
           fetch(`https://api.themoviedb.org/3/tv/${cleanId}?language=${activeLanguage}`, {
             headers: {
               Authorization: `Bearer ${TMDB_TOKEN}`,
@@ -253,12 +255,17 @@ export function WatchPage() {
         .catch(err => {
           console.error("Error fetching episodes: ", err);
           setEpisodesList([]);
+          setError('Episode data could not be loaded. The stream server may be unavailable.');
         });
     }
   }, [activeSeason, cleanId, TMDB_TOKEN, activeLanguage]);
 
   if (!item && status.includes('Loading')) {
     return <div className="page-shell"><div className="empty-state"><h2>Loading Player...</h2></div></div>;
+  }
+
+  if (error) {
+    return <div className="page-shell"><div className="empty-state"><h2>{error}</h2><p>Please try again in a moment or check back later.</p></div></div>;
   }
 
   const servers: { [key: string]: string } = {
@@ -409,8 +416,8 @@ export function WatchPage() {
             </div>
           )}
 
-          {/* قائمة الحلقات الطولية الاحترافية */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          {/* قائمة الحلقات على شكل كروت */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
             {episodesList.map((ep) => {
               const imageUrl = ep.still_path 
                 ? `https://image.tmdb.org/t/p/w300${ep.still_path}`
@@ -424,42 +431,45 @@ export function WatchPage() {
                   onClick={() => setActiveEpisode(ep.episode_number)}
                   style={{
                     display: 'flex',
-                    flexDirection: isRtl ? 'row' : 'row-reverse',
+                    flexDirection: 'column',
                     background: isActive ? '#1c1f2b' : '#12141c',
-                    borderRadius: '8px',
+                    borderRadius: '12px',
                     overflow: 'hidden',
                     cursor: 'pointer',
                     border: isActive ? '2px solid #ff6b00' : '1px solid #222',
-                    transition: 'transform 0.2s ease',
-                    minHeight: '130px'
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                    minHeight: '100%'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = isRtl ? 'translateX(-5px)' : 'translateX(5px)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(0)'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-3px)';
+                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
                 >
                   {/* صورة الحلقة */}
-                  <div style={{ width: '240px', minWidth: '240px', position: 'relative', background: '#000' }}>
+                  <div style={{ position: 'relative', aspectRatio: '16 / 9', background: '#000' }}>
                     <img 
                       src={imageUrl} 
                       alt={ep.name} 
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
-                    <div style={{ position: 'absolute', top: '8px', right: isRtl ? '8px' : 'auto', left: isRtl ? 'auto' : '8px', background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+                    <div style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
                       {activeLanguage === 'ar' ? `حلقة ${ep.episode_number}` : `${text.epBadge} ${ep.episode_number}`}
+                    </div>
+                    <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', alignItems: 'center', gap: '4px', color: '#fff', fontSize: '12px', background: 'rgba(0,0,0,0.75)', padding: '2px 8px', borderRadius: '4px' }}>
+                      <Star size={12} color="#ff6b00" fill="#ff6b00" />
+                      {(ep.vote_average || 0).toFixed(1)}
                     </div>
                   </div>
 
                   {/* تفاصيل الحلقة */}
-                  <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, textAlign: isRtl ? 'right' : 'left' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: isRtl ? 'row' : 'row-reverse' }}>
-                      <h3 style={{ color: isActive ? '#ff6b00' : '#fff', margin: 0, fontSize: '16px', fontWeight: 'bold' }}>
-                        {ep.name || `${text.fallbackEpName} ${ep.episode_number}`}
-                      </h3>
-                      
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#aaa', fontSize: '12px', background: '#222', padding: '2px 6px', borderRadius: '4px' }}>
-                        <Star size={12} color="#ff6b00" fill="#ff6b00" />
-                        {(ep.vote_average || 0).toFixed(1)} / 10
-                      </span>
-                    </div>
+                  <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, textAlign: isRtl ? 'right' : 'left' }}>
+                    <h3 style={{ color: isActive ? '#ff6b00' : '#fff', margin: 0, fontSize: '16px', fontWeight: 'bold' }}>
+                      {ep.name || `${text.fallbackEpName} ${ep.episode_number}`}
+                    </h3>
 
                     <p style={{ color: '#aaa', fontSize: '13px', margin: 0, lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: '3', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {ep.overview || text.noEpisodes}

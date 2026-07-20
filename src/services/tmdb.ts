@@ -5,7 +5,7 @@ const IMG = 'https://image.tmdb.org/t/p';
 const token = import.meta.env.VITE_TMDB_READ_TOKEN as string | undefined;
 
 function authHeaders(): HeadersInit {
-  if (!token) throw new Error('TMDB token is missing');
+  if (!token) throw new Error('PeakFlix is currently unavailable. Please try again later.');
   return { Authorization: `Bearer ${token}`, accept: 'application/json' };
 }
 
@@ -29,13 +29,13 @@ async function request(path: string, params: Record<string, string | number | bo
   const url = new URL(`${API}${path}`);
   Object.entries(params).forEach(([key, value]) => value !== undefined && url.searchParams.set(key, String(value)));
   const response = await fetch(url, { headers: authHeaders() });
-  if (!response.ok) throw new Error(`TMDB request failed (${response.status})`);
+  if (!response.ok) throw new Error('PeakFlix could not load this content right now. Please try again later.');
   return response.json();
 }
 
 function siteType(tmdbType: 'movie' | 'tv', raw: any, requested?: MediaType): MediaType {
   if (requested) return requested;
-  if (tmdbType === 'movie') return raw.original_language === 'tr' ? 'turkish-drama' : 'movie';
+  if (tmdbType === 'movie') return raw.original_language === 'ko' ? 'turkish-drama' : 'movie';
   if ((raw.genre_ids || raw.genres?.map((g: any) => g.id) || []).includes(16)) return 'anime';
   if (raw.original_language === 'tr') return 'turkish-series';
   return 'series';
@@ -65,21 +65,22 @@ function mapBasic(raw: any, tmdbType: 'movie' | 'tv', requested?: MediaType): Me
   };
 }
 
-export async function getHomeCatalog(): Promise<{ hero: MediaItem; movies: MediaItem[]; series: MediaItem[]; anime: MediaItem[] }> {
+export async function getHomeCatalog(): Promise<{ featured: MediaItem[]; movies: MediaItem[]; series: MediaItem[]; anime: MediaItem[] }> {
   const lang = getCurrentLanguage();
-  const [movieData, tvData, animeData] = await Promise.all([
+  const [allData, movieData, tvData, animeData] = await Promise.all([
+    request('/trending/all/week', { language: lang }),
     request('/trending/movie/week', { language: lang }),
     request('/trending/tv/week', { language: lang }),
     request('/discover/tv', { language: lang, with_genres: 16, sort_by: 'popularity.desc', page: 1 }),
   ]);
+  const featured = allData.results.filter((x: any) => x.poster_path).slice(0, 10).map((x: any) => mapBasic(x, x.media_type === 'tv' ? 'tv' : 'movie'));
   const movies = movieData.results.filter((x: any) => x.poster_path).map((x: any) => mapBasic(x, 'movie'));
   const series = tvData.results.filter((x: any) => x.poster_path).map((x: any) => mapBasic(x, 'tv'));
   const anime = animeData.results.filter((x: any) => x.poster_path).map((x: any) => mapBasic(x, 'tv', 'anime'));
-  const hero = await getDetails(movies[0].id);
-  return { hero, movies, series, anime };
+  return { featured, movies, series, anime };
 }
 
-export async function getCategory(type: MediaType, page = 1): Promise<{ items: MediaItem[]; totalPages: number }> {
+export async function getCategory(type: MediaType, page = 1): Promise<{ items: MediaItem[]; featured: MediaItem[]; totalPages: number }> {
   const lang = getCurrentLanguage();
   let path = '/discover/movie';
   const params: Record<string, string | number | boolean> = { language: lang, include_adult: false, sort_by: 'popularity.desc', page };
@@ -87,10 +88,12 @@ export async function getCategory(type: MediaType, page = 1): Promise<{ items: M
   if (type === 'series') { path = '/discover/tv'; tmdbType = 'tv'; params.without_genres = 16; }
   if (type === 'anime') { path = '/discover/tv'; tmdbType = 'tv'; params.with_genres = 16; }
   if (type === 'turkish-series') { path = '/discover/tv'; tmdbType = 'tv'; params.with_original_language = 'tr'; }
-  if (type === 'turkish-drama') { path = '/discover/movie'; tmdbType = 'movie'; params.with_original_language = 'tr'; }
+  if (type === 'turkish-drama') { path = '/discover/movie'; tmdbType = 'movie'; params.with_original_language = 'ko'; }
   const data = await request(path, params);
+  const mapped = data.results.filter((x: any) => x.poster_path).map((x: any) => mapBasic(x, tmdbType, type));
   return {
-    items: data.results.filter((x: any) => x.poster_path).map((x: any) => mapBasic(x, tmdbType, type)),
+    items: mapped,
+    featured: mapped.slice(0, 10),
     totalPages: Math.min(data.total_pages || 1, 500),
   };
 }

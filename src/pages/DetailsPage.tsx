@@ -49,7 +49,7 @@ export function DetailsPage() {
 
   const genres = useMemo(() => (ar && item?.genreAr?.length ? item.genreAr : item?.genre) || [], [ar, item]);
 
-  if (error) return <div className="page-shell"><div className="empty-state"><h2>{error}</h2></div></div>;
+  if (error) return <div className="page-shell"><div className="empty-state"><h2>{error}</h2><p>Please try again in a moment or check back later.</p></div></div>;
   if (!item) return <div className="page-shell"><div className="empty-state"><h2>Loading...</h2></div></div>;
 
   return (
@@ -58,7 +58,7 @@ export function DetailsPage() {
       <div className="detail-panel">
         <img className="detail-poster" src={item.poster} alt={title(item)} />
         <div className="detail-copy">
-          <span className="eyebrow">TMDB / PEAKFLIX</span>
+          <span className="eyebrow">PEAKFLIX</span>
           <h1>{title(item)}</h1>
           <div className="meta">
             <span><Star size={16} fill="currentColor" /> {item.rating}</span>
@@ -103,7 +103,7 @@ export function DetailsPage() {
             {item.trailer ? (
               <a className="secondary-btn" href={item.trailer} target="_blank" rel="noreferrer">
                 <Watch size={18} />
-                {ar ? 'الإعلان' : 'Trailer'}
+                {t('trailer')}
               </a>
             ) : null}
           </div>

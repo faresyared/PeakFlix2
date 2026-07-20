@@ -83,7 +83,7 @@ export function SearchPage() {
           </div>
         </div>
       ) : null}
-      {error && <div className="empty-state"><h2>{error}</h2></div>}
+      {error ? <div className="error-banner">{error}</div> : null}
       {items.length ? (
         <>
           <div className="catalog-grid">{items.map((x) => <MediaCard key={x.id} item={x} />)}</div>
