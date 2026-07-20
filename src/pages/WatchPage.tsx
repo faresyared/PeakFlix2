@@ -2,7 +2,8 @@ import { ArrowLeft, Server, Film, Tv, Star, ArrowRight, ArrowLeft as ArrowLeftIc
 import { useEffect, useState } from 'react';
 import { Link, useParams, useLocation } from 'react-router-dom';
 import { useLocalizedMedia } from '../hooks/useLocalizedMedia';
-import { getDetails } from '../services/tmdb'; 
+import { getDetails, getRecommendations } from '../services/tmdb';
+import { RecommendationsRow } from '../components/RecommendationsRow';
 
 interface Episode {
   id: number;
@@ -33,12 +34,13 @@ export function WatchPage() {
   const [activeEpisode, setActiveEpisode] = useState<number>(1);
   const [seasonsList, setSeasonsList] = useState<Season[]>([]);
   const [episodesList, setEpisodesList] = useState<Episode[]>([]);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
 
   // استخدام الـ hook الخاص بمشروعك لجلب اللغة الحالية المحددة من زر الهيدر
   const { title, currentLang } = useLocalizedMedia() as any; 
 
   // معرفة اللغة الحالية (عربي، إنجليزي، إسباني، ياباني...)، وإذا لم تتوفر نعتمد الإنجليزية كافتراضية
-  const activeLanguage = currentLang || localStorage.getItem('language') || 'en';
+  const activeLanguage = currentLang || localStorage.getItem('peakflix-language') || (typeof navigator !== 'undefined' ? navigator.language?.split('-')[0] : 'en') || 'en';
 
   const idString = String(id || '');
   const isTv = idString.includes('tv') || location.pathname.includes('/tv/');
@@ -167,6 +169,9 @@ export function WatchPage() {
           if (data) {
             setItem(data);
             setStatus('');
+            if (data.tmdbType) {
+              getRecommendations(idString, data.tmdbType).then(setRecommendations);
+            }
             
             const rawData = data as any;
             if (rawData.seasons && Array.isArray(rawData.seasons)) {
@@ -484,6 +489,12 @@ export function WatchPage() {
             )}
           </div>
 
+        </div>
+      )}
+
+      {recommendations.length > 0 && (
+        <div style={{ marginTop: '24px' }}>
+          <RecommendationsRow title={isRtl ? 'اقتراحات مشابهة' : 'Similar picks'} items={recommendations} />
         </div>
       )}
     </div>

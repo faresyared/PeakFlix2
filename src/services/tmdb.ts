@@ -3,6 +3,8 @@ import type { MediaItem, MediaType } from '../types/media';
 const API = 'https://api.themoviedb.org/3';
 const IMG = 'https://image.tmdb.org/t/p';
 const token = import.meta.env.VITE_TMDB_READ_TOKEN as string | undefined;
+const cache = new Map<string, { expiresAt: number; value: any }>();
+const CACHE_TTL_MS = 10 * 60 * 1000;
 
 function authHeaders(): HeadersInit {
   if (!token) throw new Error('PeakFlix is currently unavailable. Please try again later.');
@@ -11,7 +13,9 @@ function authHeaders(): HeadersInit {
 
 // دالة ذكية لتحديد لغة طلبات TMDB بناءً على اختيار المستخدم
 function getCurrentLanguage(): string {
-  const lang = localStorage.getItem('peakflix-language') || 'en';
+  const stored = localStorage.getItem('peakflix-language');
+  const browserLang = typeof navigator !== 'undefined' ? navigator.language?.split('-')[0] : '';
+  const lang = stored || browserLang || 'en';
   // تحويل رموز اللغات إلى الشكل القياسي الذي تفضله TMDB
   const langMap: Record<string, string> = {
     ar: 'ar-SA',
@@ -28,9 +32,14 @@ function getCurrentLanguage(): string {
 async function request(path: string, params: Record<string, string | number | boolean | undefined> = {}) {
   const url = new URL(`${API}${path}`);
   Object.entries(params).forEach(([key, value]) => value !== undefined && url.searchParams.set(key, String(value)));
+  const cacheKey = `${path}?${url.searchParams.toString()}`;
+  const cached = cache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
   const response = await fetch(url, { headers: authHeaders() });
   if (!response.ok) throw new Error('PeakFlix could not load this content right now. Please try again later.');
-  return response.json();
+  const data = await response.json();
+  cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, value: data });
+  return data;
 }
 
 function siteType(tmdbType: 'movie' | 'tv', raw: any, requested?: MediaType): MediaType {
@@ -146,4 +155,48 @@ export async function getDetails(id: string): Promise<MediaItem> {
     homepage: mainRes.homepage || '',
     status: mainRes.status || '',
   };
+}
+
+export async function getRecommendations(id: string, tmdbType: 'movie' | 'tv'): Promise<MediaItem[]> {
+  const lang = getCurrentLanguage();
+  const [, rawId] = id.split('-') as ['movie' | 'tv', string];
+  try {
+    const [currentRes, recommendationsRes, similarRes] = await Promise.all([
+      request(`/${tmdbType}/${rawId}`, { language: lang }),
+      request(`/${tmdbType}/${rawId}/recommendations`, { language: lang, page: 1 }),
+      request(`/${tmdbType}/${rawId}/similar`, { language: lang, page: 1 }),
+    ]);
+
+    const currentGenres = new Set<number>((currentRes.genres || []).map((g: any) => g.id));
+    const currentLanguage = currentRes.original_language || '';
+    const currentYear = (currentRes.release_date || currentRes.first_air_date || '').slice(0, 4);
+    const recommendationIds = new Set<number>((recommendationsRes.results || []).map((x: any) => x.id));
+
+    const scored = new Map<number, { item: any; score: number }>();
+
+    for (const item of [...(recommendationsRes.results || []), ...(similarRes.results || [])]) {
+      if (!item.poster_path) continue;
+      const genreIds = new Set<number>((item.genre_ids || []).map((id: number) => id));
+      const sharedGenres = [...currentGenres].filter((id) => genreIds.has(id)).length;
+      const sameLanguage = item.original_language === currentLanguage;
+      const itemYear = (item.release_date || item.first_air_date || '').slice(0, 4);
+      const yearDiff = currentYear && itemYear ? Math.abs(Number(currentYear) - Number(itemYear)) : 0;
+      const baseScore = recommendationIds.has(item.id) ? 6 : 2;
+      const score = baseScore + sharedGenres * 2 + (sameLanguage ? 2 : 0) + (yearDiff <= 3 ? 1 : 0);
+
+      const existing = scored.get(item.id);
+      if (existing) {
+        existing.score += score;
+      } else {
+        scored.set(item.id, { item, score });
+      }
+    }
+
+    return [...scored.values()]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8)
+      .map(({ item }) => mapBasic(item, tmdbType));
+  } catch {
+    return [];
+  }
 }

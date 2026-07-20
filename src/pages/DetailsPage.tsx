@@ -4,8 +4,9 @@ import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { MediaItem } from '../types/media';
 import { useLocalizedMedia } from '../hooks/useLocalizedMedia';
-import { getDetails } from '../services/tmdb';
+import { getDetails, getRecommendations } from '../services/tmdb';
 import { getLibrary, saveLibraryEntry, toggleLibraryEntry } from '../utils/library';
+import { RecommendationsRow } from '../components/RecommendationsRow';
 
 export function DetailsPage() {
   const { id } = useParams();
@@ -15,11 +16,17 @@ export function DetailsPage() {
   const [error, setError] = useState('');
   const [favorite, setFavorite] = useState(false);
   const [watchLater, setWatchLater] = useState(false);
+  const [recommendations, setRecommendations] = useState<MediaItem[]>([]);
 
   useEffect(() => {
     if (id) {
       getDetails(id)
-        .then(setItem)
+        .then((data) => {
+          setItem(data);
+          if (data.tmdbType) {
+            getRecommendations(id, data.tmdbType).then(setRecommendations);
+          }
+        })
         .catch((e) => setError(e.message));
     }
   }, [id]);
@@ -109,6 +116,7 @@ export function DetailsPage() {
           </div>
         </div>
       </div>
+      {recommendations.length ? <div className="content-shell"><RecommendationsRow title={ar ? 'اقتراحات مشابهة' : 'Similar picks'} items={recommendations} /></div> : null}
     </div>
   );
 }
