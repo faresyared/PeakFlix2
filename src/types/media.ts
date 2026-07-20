@@ -39,3 +39,16 @@ export interface WatchProgress {
   duration: number;
   updatedAt: number;
 }
+
+export interface LibraryEntry {
+  id: string;
+  title: string;
+  titleAr: string;
+  poster: string;
+  backdrop: string;
+  rating: number;
+  year: number;
+  type: MediaType;
+  tmdbType?: 'movie' | 'tv';
+  watchedAt: number;
+}
