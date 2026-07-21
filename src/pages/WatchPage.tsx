@@ -28,7 +28,7 @@ export function WatchPage() {
   const [status, setStatus] = useState('Loading Player...');
   const [error, setError] = useState('');
   
-  const [activeServer, setActiveServer] = useState('vipstream'); 
+  const [activeServer, setActiveServer] = useState('ArabVeTurk'); 
   
   const [activeSeason, setActiveSeason] = useState<number>(1);
   const [activeEpisode, setActiveEpisode] = useState<number>(1);
@@ -273,29 +273,45 @@ export function WatchPage() {
     return <div className="page-shell"><div className="empty-state"><h2>{error}</h2><p>Please try again in a moment or check back later.</p></div></div>;
   }
 
-  // تم تنظيف وتعديل الروابط بالكامل لتشمل سيرفرات تدعم المحتوى التركي والكوري
+  // استخدام أسماء السيرفرات الحقيقية كـ keys لإظهار أسمائها بدلاً من أرقام
   const servers: { [key: string]: string } = {
-    vipstream: isTv
+    ArabVeTurk: isTv
+      ? `https://arabveturk.com/embed/tv/${cleanId}/${activeSeason}/${activeEpisode}`
+      : `https://arabveturk.com/embed/movie/${cleanId}`,
+
+    ArabHD: isTv
+      ? `https://arabhd.net/embed/tv/${cleanId}/${activeSeason}/${activeEpisode}`
+      : `https://arabhd.net/embed/movie/${cleanId}`,
+
+    RedHD: isTv
+      ? `https://redhd.tv/embed/tv/${cleanId}/${activeSeason}/${activeEpisode}`
+      : `https://redhd.tv/embed/movie/${cleanId}`,
+
+    "OK.ru": isTv
+      ? `https://ok.ru/videoembed/${cleanId}`
+      : `https://ok.ru/videoembed/${cleanId}`,
+
+    VidSrc: isTv
       ? `https://vidsrc.me/embed/tv?tmdb=${cleanId}&season=${activeSeason}&episode=${activeEpisode}`
       : `https://vidsrc.me/embed/movie?tmdb=${cleanId}`,
 
-    server_2: isTv
+    VidSrcPM: isTv
       ? `https://vidsrc.pm/embed/tv?tmdb=${cleanId}&season=${activeSeason}&episode=${activeEpisode}`
       : `https://vidsrc.pm/embed/movie?tmdb=${cleanId}`,
 
-    smashystream: isTv
+    SmashyStream: isTv
       ? `https://embed.smashystream.com/playere.php?tmdb=${cleanId}&season=${activeSeason}&episode=${activeEpisode}`
       : `https://embed.smashystream.com/playere.php?tmdb=${cleanId}`,
 
-    embed_su: isTv
+    EmbedSu: isTv
       ? `https://embed.su/embed/tv/${cleanId}/${activeSeason}/${activeEpisode}`
       : `https://embed.su/embed/movie/${cleanId}`,
 
-    autoembed: isTv
+    AutoEmbed: isTv
       ? `https://player.autoembed.cc/tv/${cleanId}/${activeSeason}/${activeEpisode}`
       : `https://player.autoembed.cc/movie/${cleanId}`,
 
-    multiembed: isTv 
+    MultiEmbed: isTv 
       ? `https://multiembed.mov/?video_id=${cleanId}&tmdb=1&s=${activeSeason}&e=${activeEpisode}`
       : `https://multiembed.mov/?video_id=${cleanId}&tmdb=1`
   };
@@ -327,19 +343,19 @@ export function WatchPage() {
         </div>
       </div>
 
-      {/* سيرفرات البث */}
+      {/* سيرفرات البث باسمائها بدلاً من الأرقام */}
       <div style={{ display: 'flex', gap: '10px', marginTop: '15px', flexWrap: 'wrap', background: '#12141c', padding: '10px', borderRadius: '6px', border: '1px solid #222', alignItems: 'center' }}>
         <span style={{ color: '#aaa', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '14px', marginLeft: isRtl ? '10px' : '0', marginRight: isRtl ? '0' : '10px' }}>
           <Server size={16} color="#ff6b00" /> {text.serverTitle}
         </span>
-        {Object.keys(servers).map((srv, idx) => (
+        {Object.keys(servers).map((srvKey) => (
           <button
-            key={srv}
-            onClick={() => setActiveServer(srv)}
+            key={srvKey}
+            onClick={() => setActiveServer(srvKey)}
             style={{
-              background: activeServer === srv ? '#ff6b00' : '#08090d',
+              background: activeServer === srvKey ? '#ff6b00' : '#08090d',
               color: '#fff',
-              border: activeServer === srv ? '1px solid #ff6b00' : '1px solid #333',
+              border: activeServer === srvKey ? '1px solid #ff6b00' : '1px solid #333',
               padding: '6px 16px',
               borderRadius: '4px',
               fontSize: '13px',
@@ -347,7 +363,7 @@ export function WatchPage() {
               cursor: 'pointer'
             }}
           >
-            {`${text.serverBtn} ${idx + 1}`}
+            {srvKey}
           </button>
         ))}
       </div>
