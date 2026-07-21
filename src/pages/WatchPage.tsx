@@ -132,7 +132,7 @@ export function WatchPage() {
       serverTitle: 'Server dal vivo:', 
       serverBtn: 'Server',
       currentSeason: 'Stagione attuale:', 
-      seasonOpt: 'Stagione',
+      seasonOpt: 'Server',
       epBadge: 'Ep',
       fallbackEpName: 'Episodio',
       loadingEpisodes: 'Caricamento episodi...', 
@@ -273,14 +273,23 @@ export function WatchPage() {
     return <div className="page-shell"><div className="empty-state"><h2>{error}</h2><p>Please try again in a moment or check back later.</p></div></div>;
   }
 
+  // تم تزويد السيرفرات بقائمة أكبر وأقوى لتغطية الدراما الكورية والعربية والتركية
   const servers: { [key: string]: string } = {
     vipstream: isTv
       ? `https://vidsrc.me/embed/tv?tmdb=${cleanId}&season=${activeSeason}&episode=${activeEpisode}`
       : `https://vidsrc.me/embed/movie?tmdb=${cleanId}`,
     
+    vidsrc_pro: isTv
+      ? `https://vidsrc.pro/embed/tv/${cleanId}/${activeSeason}/${activeEpisode}`
+      : `https://vidsrc.pro/embed/movie/${cleanId}`,
+
     gdrive_player: isTv
       ? `https://vidsrc.cc/v2/embed/tv/${cleanId}/${activeSeason}/${activeEpisode}`
       : `https://vidsrc.cc/v2/embed/movie/${cleanId}`,
+
+    embed_su: isTv
+      ? `https://embed.su/embed/tv/${cleanId}/${activeSeason}/${activeEpisode}`
+      : `https://embed.su/embed/movie/${cleanId}`,
     
     doodstream_alt: isTv
       ? `https://player.autoembed.cc/tv/${cleanId}/${activeSeason}/${activeEpisode}`
