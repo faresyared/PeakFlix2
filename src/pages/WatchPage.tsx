@@ -28,7 +28,7 @@ export function WatchPage() {
   const [status, setStatus] = useState('Loading Player...');
   const [error, setError] = useState('');
   
-  const [activeServer, setActiveServer] = useState('ArabVeTurk'); 
+  const [activeServer, setActiveServer] = useState('VidSrc'); 
   
   const [activeSeason, setActiveSeason] = useState<number>(1);
   const [activeEpisode, setActiveEpisode] = useState<number>(1);
@@ -273,24 +273,8 @@ export function WatchPage() {
     return <div className="page-shell"><div className="empty-state"><h2>{error}</h2><p>Please try again in a moment or check back later.</p></div></div>;
   }
 
-  // استخدام أسماء السيرفرات الحقيقية كـ keys لإظهار أسمائها بدلاً من أرقام
+  // قائمة السيرفرات بالترتيب المحدد فقط
   const servers: { [key: string]: string } = {
-    ArabVeTurk: isTv
-      ? `https://arabveturk.com/embed/tv/${cleanId}/${activeSeason}/${activeEpisode}`
-      : `https://arabveturk.com/embed/movie/${cleanId}`,
-
-    ArabHD: isTv
-      ? `https://arabhd.net/embed/tv/${cleanId}/${activeSeason}/${activeEpisode}`
-      : `https://arabhd.net/embed/movie/${cleanId}`,
-
-    RedHD: isTv
-      ? `https://redhd.tv/embed/tv/${cleanId}/${activeSeason}/${activeEpisode}`
-      : `https://redhd.tv/embed/movie/${cleanId}`,
-
-    "OK.ru": isTv
-      ? `https://ok.ru/videoembed/${cleanId}`
-      : `https://ok.ru/videoembed/${cleanId}`,
-
     VidSrc: isTv
       ? `https://vidsrc.me/embed/tv?tmdb=${cleanId}&season=${activeSeason}&episode=${activeEpisode}`
       : `https://vidsrc.me/embed/movie?tmdb=${cleanId}`,
@@ -302,14 +286,6 @@ export function WatchPage() {
     SmashyStream: isTv
       ? `https://embed.smashystream.com/playere.php?tmdb=${cleanId}&season=${activeSeason}&episode=${activeEpisode}`
       : `https://embed.smashystream.com/playere.php?tmdb=${cleanId}`,
-
-    EmbedSu: isTv
-      ? `https://embed.su/embed/tv/${cleanId}/${activeSeason}/${activeEpisode}`
-      : `https://embed.su/embed/movie/${cleanId}`,
-
-    AutoEmbed: isTv
-      ? `https://player.autoembed.cc/tv/${cleanId}/${activeSeason}/${activeEpisode}`
-      : `https://player.autoembed.cc/movie/${cleanId}`,
 
     MultiEmbed: isTv 
       ? `https://multiembed.mov/?video_id=${cleanId}&tmdb=1&s=${activeSeason}&e=${activeEpisode}`
@@ -343,7 +319,7 @@ export function WatchPage() {
         </div>
       </div>
 
-      {/* سيرفرات البث باسمائها بدلاً من الأرقام */}
+      {/* سيرفرات البث بالترتيب المحدد */}
       <div style={{ display: 'flex', gap: '10px', marginTop: '15px', flexWrap: 'wrap', background: '#12141c', padding: '10px', borderRadius: '6px', border: '1px solid #222', alignItems: 'center' }}>
         <span style={{ color: '#aaa', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '14px', marginLeft: isRtl ? '10px' : '0', marginRight: isRtl ? '0' : '10px' }}>
           <Server size={16} color="#ff6b00" /> {text.serverTitle}
