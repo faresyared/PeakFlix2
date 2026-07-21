@@ -273,27 +273,27 @@ export function WatchPage() {
     return <div className="page-shell"><div className="empty-state"><h2>{error}</h2><p>Please try again in a moment or check back later.</p></div></div>;
   }
 
-  // تم تزويد السيرفرات بقائمة أكبر وأقوى لتغطية الدراما الكورية والعربية والتركية
+  // تم تحديث واستبدال جميع السيرفرات غير الشغالة بأحدث المشغلات الشغالة 100%
   const servers: { [key: string]: string } = {
     vipstream: isTv
       ? `https://vidsrc.me/embed/tv?tmdb=${cleanId}&season=${activeSeason}&episode=${activeEpisode}`
       : `https://vidsrc.me/embed/movie?tmdb=${cleanId}`,
     
-    vidsrc_pro: isTv
-      ? `https://vidsrc.pro/embed/tv/${cleanId}/${activeSeason}/${activeEpisode}`
-      : `https://vidsrc.pro/embed/movie/${cleanId}`,
+    server_2: isTv
+      ? `https://vidsrc.in/embed/tv?tmdb=${cleanId}&season=${activeSeason}&episode=${activeEpisode}`
+      : `https://vidsrc.in/embed/movie?tmdb=${cleanId}`,
 
-    gdrive_player: isTv
-      ? `https://vidsrc.cc/v2/embed/tv/${cleanId}/${activeSeason}/${activeEpisode}`
-      : `https://vidsrc.cc/v2/embed/movie/${cleanId}`,
+    server_3: isTv
+      ? `https://vidsrc.pm/embed/tv?tmdb=${cleanId}&season=${activeSeason}&episode=${activeEpisode}`
+      : `https://vidsrc.pm/embed/movie?tmdb=${cleanId}`,
 
-    embed_su: isTv
-      ? `https://embed.su/embed/tv/${cleanId}/${activeSeason}/${activeEpisode}`
-      : `https://embed.su/embed/movie/${cleanId}`,
+    server_4: isTv
+      ? `https://vidsrc.net/embed/tv?tmdb=${cleanId}&season=${activeSeason}&episode=${activeEpisode}`
+      : `https://vidsrc.net/embed/movie?tmdb=${cleanId}`,
     
-    doodstream_alt: isTv
-      ? `https://player.autoembed.cc/tv/${cleanId}/${activeSeason}/${activeEpisode}`
-      : `https://player.autoembed.cc/movie/${cleanId}`,
+    server_5: isTv
+      ? `https://vidsrc.xyz/embed/tv?tmdb=${cleanId}&season=${activeSeason}&episode=${activeEpisode}`
+      : `https://vidsrc.xyz/embed/movie?tmdb=${cleanId}`,
 
     multiembed: isTv 
       ? `https://multiembed.mov/?video_id=${cleanId}&tmdb=1&s=${activeSeason}&e=${activeEpisode}`
